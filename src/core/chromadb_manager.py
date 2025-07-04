@@ -1,7 +1,7 @@
 import chromadb
 from chromadb.config import Settings
 from typing import List, Dict, Any, Optional
-from core.ollama_embedding import OllamaEmbedding
+from src.core.ollama_embedding import OllamaEmbedding
 
 
 class ChromaDBManager:

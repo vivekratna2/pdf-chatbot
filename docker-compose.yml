@@ -1,4 +1,20 @@
 services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./src:/app/src
+      - ./raw:/app/raw
+    environment:
+      - DEBUG=True
+    networks:
+      - ollama-app-network
+    restart: on-failure
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8001 --reload
+    
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
@@ -9,6 +25,8 @@ services:
     volumes:
       - ollama_data:/root/.ollama
       - ./modelfiles:/modelfiles
+    networks:
+      - ollama-app-network
 
   ollama-webui:
     image: ghcr.io/open-webui/open-webui:main
@@ -29,6 +47,24 @@ services:
       - WEBUI_SECRET_KEY=t0p-s3cr3t
     extra_hosts:
       - host.docker.internal:host-gateway
+    networks:
+      - ollama-app-network
+
+  zipkin:
+    image: openzipkin/zipkin
+    ports:
+      - "9411:9411"
+    depends_on: [otel-collector]
+    networks:
+      - ollama-app-network
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.111.0
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ${PWD}/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    networks:
+      - ollama-app-network
 
   chromadb:
     image: chromadb/chroma:latest
@@ -40,11 +76,19 @@ services:
       - CHROMA_SERVER_HOST=0.0.0.0
       - CHROMA_SERVER_HTTP_PORT=8000
       - CHROMA_SERVER_CORS_ALLOW_ORIGINS=["*"]
+      - CHROMA_OPEN_TELEMETRY__ENDPOINT=http://otel-collector:4317/
+      - CHROMA_OPEN_TELEMETRY__SERVICE_NAME=chroma
     volumes:
       - chromadb_data:/chroma/chroma
+    networks:
+      - ollama-app-network
 
 volumes:
   ollama_data:
     name: ollama_data
   chromadb_data:
     name: chromadb_data
+
+networks:
+  ollama-app-network:
+    driver: bridge

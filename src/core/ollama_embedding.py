@@ -4,7 +4,7 @@ import requests
 
 
 class OllamaEmbedding:
-    def __init__(self, model_name: str = "mistral", base_url: str = "localhost:11434"):
+    def __init__(self, model_name: str = "mistral", base_url: str = "http://ollama:11434"):
         self.model_name = model_name
         self.base_url = base_url
         self.embed_url = f"{self.base_url}/api/embeddings"

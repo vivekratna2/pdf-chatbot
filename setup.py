@@ -2,6 +2,8 @@ from setuptools import find_packages, setup
 
 requirements = [
     "fastapi==0.115.12",
+    "pydantic==2.11.3",
+    "pydantic-settings==2.9.1",
     "uvicorn==0.35.0",
     "langgraph==0.5.1",
     "chromadb==1.0.15",
