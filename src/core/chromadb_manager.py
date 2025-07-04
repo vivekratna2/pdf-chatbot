@@ -22,10 +22,11 @@ class ChromaDBManager:
             embedding_function=None  # We'll handle embeddings manually
         )
     
-    def add_documents(self, 
-                     documents: List[str], 
-                     metadatas: Optional[List[Dict[str, Any]]] = None,
-                     ids: Optional[List[str]] = None) -> None:
+    def add_documents(self,
+                      documents: List[str],
+                      embeddings: List[List[float]],
+                      metadatas: Optional[List[Dict[str, Any]]] = None,
+                      ids: Optional[List[str]] = None) -> None:
         """
         Add documents to the ChromaDB collection with embeddings.
         
@@ -34,11 +35,8 @@ class ChromaDBManager:
             metadatas: Optional list of metadata dictionaries for each document
             ids: Optional list of unique IDs for each document
         """
-        if not documents:
+        if not embeddings:
             return
-        
-        # Generate embeddings using Ollama
-        embeddings = self.embedding_function.embed_documents(documents)
         
         # Generate IDs if not provided
         if ids is None:

@@ -5,6 +5,7 @@ from chromadb.config import Settings
 from src.core.chromadb_manager import ChromaDBManager
 from src.core.ollama_embedding import OllamaEmbedding
 from src.core.ollama_chat import OllamaChat
+from src.utils.file_chunker import PDFChunker
 
 
 class OllamaRAG:
@@ -31,21 +32,30 @@ class OllamaRAG:
         #     metadata={"hnsw:space": "cosine"}
         # )
     
-    def add_documents(self, texts: List[str], metadata: Optional[List[Dict]] = None) -> None:
+    def add_documents(self, file_path: str, metadata: Optional[List[Dict]] = None) -> None:
         """Add documents to the knowledge base"""
+        pdfchunker = PDFChunker(chunk_size=500)
+        chunks = pdfchunker.process_pdf("/app/raw/Resume.pdf")
+        
         # Generate embeddings using Ollama
-        embeddings = self.embedding_client.embed_documents(texts)
+        embeddings = self.embedding_client.embed_documents(chunks)
         
         # Prepare data for ChromaDB
-        ids = [f"doc_{i}" for i in range(len(texts))]
-        metadatas = metadata if metadata else [{"source": f"doc_{i}"} for i in range(len(texts))]
+        ids = [f"doc_{i}" for i in range(len(chunks))]
+        metadatas = metadata if metadata else [{"source": f"doc_{i}"} for i in range(len(chunks))]
         
         # Store in ChromaDB
-        self.collection.add(
-            documents=texts,
+        # self.collection.add(
+        #     documents=chunks,
+        #     embeddings=embeddings,
+        #     ids=ids,
+        #     metadatas=metadatas
+        # )
+        self.chroma_client.add_documents(
+            documents=chunks,
             embeddings=embeddings,
-            ids=ids,
-            metadatas=metadatas
+            metadatas=metadatas,
+            ids=ids
         )
     
     def retrieve_relevant_documents(

@@ -16,14 +16,7 @@ async def ask_question():
     This is a placeholder endpoint that can be extended later.
     """
     try:
-        pdfchunker = PDFChunker()
-        ollama_embedding = OllamaEmbedding()
-        chromadb = ChromaDBManager(collection_name="resume_collection")
-        chunks = pdfchunker.process_pdf("/app/raw/Resume.pdf")
-        # embeddings = ollama_embedding.embed_documents(chunks)
-        response = chromadb.add_documents(documents=chunks)
-        return {"message": "PDF processed successfully", "chroma response": response}
-        # return {"message": "This is a placeholder for the ask question endpoint."}
+        return {"message": "This is a placeholder for the ask question endpoint."}
     except Exception as e:
         logger.error(f"Error in ask_question: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
@@ -36,12 +29,8 @@ async def upload_file():
     This is a placeholder endpoint that can be extended later.
     """
     try:
-        pdfchunker = PDFChunker()
-        ollama_embedding = OllamaEmbedding()
-        chromadb = ChromaDBManager(collection_name="resume_collection")
-        chunks = pdfchunker.process_pdf("/app/raw/Resume.pdf")
-        # embeddings = ollama_embedding.embed_documents(chunks)
-        response = chromadb.add_documents(documents=chunks)
+        ollama_rag = OllamaRAG()
+        response = ollama_rag.add_documents(file_path="/app/raw/Resume.pdf")
         return {"message": "PDF processed successfully", "chroma response": response}
         # return {"message": "This is a placeholder for the ask question endpoint."}
     except Exception as e:
@@ -91,4 +80,30 @@ async def user_ask():
             }
     except Exception as e:
         logger.error(f"Error in user_ask: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    
+@router.get("/collections/count")
+async def get_collection_count():
+    """
+    Endpoint to get the number of documents in a specific collection.
+    """
+    try:
+        chromadb = ChromaDBManager(collection_name="resume_collection")
+        count = chromadb.get_collection_count()
+        return {"collection count": count}
+    except Exception as e:
+        logger.error(f"Error in get_collection_count: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    
+@router.delete("/collections/reset")
+async def reset_collection():
+    """
+    Endpoint to delete a specific collection.
+    """
+    try:
+        chromadb = ChromaDBManager(collection_name="resume_collection")
+        chromadb.reset_collection()
+        return {"message": "Collection deleted successfully"}
+    except Exception as e:
+        logger.error(f"Error in delete_collection: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
