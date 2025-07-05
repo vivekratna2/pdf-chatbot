@@ -1,6 +1,6 @@
+import logging
 from typing import TypedDict, List, Dict, Any, Optional
-from langgraph import StateGraph, END
-from langgraph.graph import MessageGraph
+from langgraph.graph import MessageGraph, StateGraph, END
 from langgraph.prebuilt import ToolNode
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.tools import tool
@@ -8,7 +8,9 @@ import asyncio
 
 from src.core.ollama_rag import OllamaRAG
 from src.core.chromadb_manager import ChromaDBManager
-from utils.file_chunker import PDFChunker
+from src.utils.file_chunker import PDFChunker
+
+logger = logging.getLogger(__name__)
 
 
 class AgentState(TypedDict):
@@ -21,6 +23,7 @@ class AgentState(TypedDict):
     sources: List[Dict[str, Any]]
     next_action: str
     error: Optional[str]
+    retry_count: int  # Add this field
 
 
 class RAGAgent:
@@ -31,7 +34,8 @@ class RAGAgent:
         self.rag = OllamaRAG(
             embedding_model=embedding_model,
             chat_model=chat_model,
-            base_url=base_url
+            base_url=base_url,
+            top_k=3
         )
         self.chromadb = ChromaDBManager(collection_name="resume_collection")
         self.pdf_chunker = PDFChunker()
@@ -45,31 +49,20 @@ class RAGAgent:
         
         # Add nodes
         workflow.add_node("query_analysis", self._analyze_query)
-        workflow.add_node("retrieve_documents", self._retrieve_documents)
         workflow.add_node("generate_answer", self._generate_answer)
-        workflow.add_node("validate_answer", self._validate_answer)
         workflow.add_node("handle_error", self._handle_error)
         
         # Define the flow
         workflow.set_entry_point("query_analysis")
         
         # Add edges
-        workflow.add_edge("query_analysis", "retrieve_documents")
+        workflow.add_edge("query_analysis", "generate_answer")
         workflow.add_conditional_edges(
-            "retrieve_documents",
-            self._should_generate_answer,
+            "generate_answer",
+            self._is_error,
             {
-                "generate": "generate_answer",
-                "error": "handle_error"
-            }
-        )
-        workflow.add_edge("generate_answer", "validate_answer")
-        workflow.add_conditional_edges(
-            "validate_answer",
-            self._should_end,
-            {
-                "end": END,
-                "regenerate": "generate_answer"
+                True: "handle_error",
+                False: END
             }
         )
         workflow.add_edge("handle_error", END)
@@ -82,31 +75,9 @@ class RAGAgent:
         
         # Add query analysis logic here
         # For now, just pass through
-        state["next_action"] = "retrieve"
+        state["next_action"] = "generate"
         return state
     
-    def _retrieve_documents(self, state: AgentState) -> AgentState:
-        """Retrieve relevant documents from ChromaDB"""
-        try:
-            query = state["query"]
-            relevant_docs = self.rag.retrieve_relevant_documents(query, top_k=5)
-            
-            if relevant_docs:
-                state["context"] = [doc[0] for doc in relevant_docs]
-                state["sources"] = [
-                    {"text": doc[0][:200] + "...", "score": doc[1]}
-                    for doc in relevant_docs
-                ]
-                state["next_action"] = "generate"
-            else:
-                state["error"] = "No relevant documents found"
-                state["next_action"] = "error"
-                
-        except Exception as e:
-            state["error"] = str(e)
-            state["next_action"] = "error"
-        
-        return state
     
     def _generate_answer(self, state: AgentState) -> AgentState:
         """Generate answer using the retrieved context"""
@@ -115,10 +86,7 @@ class RAGAgent:
             context = state.get("context", [])
             
             result = self.rag.generate_answer(
-                user_question=query,
-                temperature=0.7,
-                max_tokens=1000,
-                include_sources=False
+                user_question=query
             )
             
             state["answer"] = result["answer"]
@@ -129,21 +97,7 @@ class RAGAgent:
             state["next_action"] = "error"
         
         return state
-    
-    def _validate_answer(self, state: AgentState) -> AgentState:
-        """Validate the generated answer"""
-        answer = state.get("answer", "")
-        confidence = state.get("confidence", 0.0)
-        
-        # Simple validation logic
-        if len(answer) < 10:
-            state["next_action"] = "regenerate"
-        elif confidence < 0.3:
-            state["next_action"] = "regenerate"
-        else:
-            state["next_action"] = "end"
-        
-        return state
+
     
     def _handle_error(self, state: AgentState) -> AgentState:
         """Handle errors in the workflow"""
@@ -152,9 +106,9 @@ class RAGAgent:
         state["confidence"] = 0.0
         return state
     
-    def _should_generate_answer(self, state: AgentState) -> str:
+    def _is_error(self, state: AgentState) -> str:
         """Decide whether to generate answer or handle error"""
-        return state.get("next_action", "error")
+        return "error" in state and state["error"] is not None
     
     def _should_end(self, state: AgentState) -> str:
         """Decide whether to end or regenerate"""
@@ -170,7 +124,8 @@ class RAGAgent:
             confidence=0.0,
             sources=[],
             next_action="",
-            error=None
+            error=None,
+            retry_count=0  # Add this field
         )
         
         # Run the graph
@@ -180,5 +135,6 @@ class RAGAgent:
             "answer": result.get("answer", ""),
             "confidence": result.get("confidence", 0.0),
             "sources": result.get("sources", []),
-            "query": query
+            "query": query,
+            "error": result.get("error", None),
         }

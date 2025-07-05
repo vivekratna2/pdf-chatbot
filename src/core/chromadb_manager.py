@@ -1,3 +1,4 @@
+import os
 import chromadb
 from chromadb.config import Settings
 from typing import List, Dict, Any, Optional
@@ -8,7 +9,8 @@ class ChromaDBManager:
     def __init__(self, collection_name: str, persist_directory: str = "./chroma_db"):
         self.collection_name = collection_name
         self.persist_directory = persist_directory
-        self.embedding_function = OllamaEmbedding()
+        self.model_name = os.getenv("MODEL_NAME", "mistral")
+        self.embedding_function = OllamaEmbedding(model_name=self.model_name, base_url=os.getenv("OLLAMA_BASE_URL", "http://ollama:11434"))
         
         # Initialize ChromaDB client with persistence
         self.client = chromadb.PersistentClient(

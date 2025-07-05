@@ -1,3 +1,4 @@
+import os
 from typing import List, Dict, Any, Optional, Tuple
 import chromadb
 from chromadb.config import Settings
@@ -11,8 +12,8 @@ from src.utils.file_chunker import PDFChunker
 class OllamaRAG:
     def __init__(
         self, 
-        embedding_model: str = "mistral",
-        chat_model: str = "mistral",
+        embedding_model: str = os.getenv("MODEL_NAME", "mistral"),
+        chat_model: str = os.getenv("MODEL_NAME", "mistral"),
         base_url: str = "http://ollama:11434",
         top_k: int = 5,
         collection_name: str = "documents",
