@@ -2,6 +2,8 @@ from contextlib import asynccontextmanager
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from src.agent.langgraph_agent import RAGAgent
 from src.config import settings
 from src.api import chat_api
 

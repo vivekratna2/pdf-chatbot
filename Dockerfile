@@ -24,7 +24,7 @@ COPY src ./src
 COPY .env* ./
 
 # Expose the port the app will run on
-EXPOSE 8000
+EXPOSE 8001
 
 # Create a non-root user and switch to it
 RUN adduser --disabled-password --gecos '' appuser

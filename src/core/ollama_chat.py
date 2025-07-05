@@ -44,7 +44,8 @@ Answer:"""
             "options": {
                 "temperature": temperature,
                 "num_predict": max_tokens
-            }
+            },
+            "keep_alive": "15m"  # Keep model loaded for 10 minutes after last use
         }
         
         try:
