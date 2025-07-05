@@ -12,16 +12,16 @@ from src.core.ollama_rag import OllamaRAG
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+
 class ChatRequest(BaseModel):
     query: str
-    temperature: float = 0.7
-    max_tokens: int = 1000
 
 class ChatResponse(BaseModel):
     answer: str
     confidence: float
     sources: list
     query: str
+
 
 @router.post("/ask")
 async def ask_question(request: ChatRequest):
@@ -55,23 +55,6 @@ async def upload_file():
         logger.error(f"Error in ask_question: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     
-
-# @router.post("/ask")
-# async def query_chroma(
-#     question: str = Body(..., description="The question to ask the ChromaDB collection.")
-# ):
-#     """
-#     Endpoint to query the ChromaDB collection.
-#     This is a placeholder endpoint that can be extended later.
-#     """
-#     try:
-#         chromadb = ChromaDBManager(collection_name="resume_collection")
-#         query_text = "What is the candidate's name?"
-#         results = chromadb.query(query_text=query_text)
-#         return {"message": "Query executed successfully", "results": results}
-#     except Exception as e:
-#         logger.error(f"Error in query_chroma: {e}")
-#         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     
 @router.get("/user_ask")
 async def user_ask():
@@ -100,6 +83,7 @@ async def user_ask():
         logger.error(f"Error in user_ask: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     
+    
 @router.get("/collections/count")
 async def get_collection_count():
     """
@@ -112,6 +96,7 @@ async def get_collection_count():
     except Exception as e:
         logger.error(f"Error in get_collection_count: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    
     
 @router.delete("/collections/reset")
 async def reset_collection():
