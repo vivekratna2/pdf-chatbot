@@ -9,7 +9,7 @@ This AI Agent System provides a comprehensive platform for managing AI agents wi
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.10+
 - Docker and Docker Compose
 - Git
 
@@ -27,14 +27,22 @@ This AI Agent System provides a comprehensive platform for managing AI agents wi
    # Edit .env with your configuration
    ```
 
-3. **Install dependencies**
+3. **Build Docker Image**
    ```bash
-   pip install -e .
+   docker compose build
    ```
 
 4. **Start services with Docker Compose**
    ```bash
    docker-compose up -d
+   ```
+
+5. **Mistral installation**
+
+   This is for the case when Ollama is hosted via docker.
+
+   ```bash
+   docker exec -it ollama ollama pull 'mistral:7b'
    ```
 
 ### Development Setup
@@ -43,7 +51,7 @@ This AI Agent System provides a comprehensive platform for managing AI agents wi
 flowchart LR
     subgraph "Development Environment"
         A[Clone Repository] --> B[Setup .env]
-        B --> C[Install Dependencies]
+        B --> C[Build Docker Image]
         C --> D[Start Docker Services]
         D --> E[Run Application]
     end
@@ -51,8 +59,8 @@ flowchart LR
     subgraph "Docker Services"
         F[Ollama Container]
         G[ChromaDB Container]
-        H[Redis Container]
-        I[OpenTelemetry Collector]
+        H[API Container]
+        I[Ollama WebUI Container]
     end
     
     E --> F
@@ -61,13 +69,9 @@ flowchart LR
     E --> I
 ```
 
-### Running the Application
-
-1. **Start the FastAPI server**
-   ```bash
-   python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
-   ```
-
-2. **Access the application**
+1. **Access the application**
    - API Documentation: `http://localhost:8001/docs`
 
+
+### Note
+* Running Ollama service in the host machine results in faster chat response than with docker. Ollama deployed with docker uses only CPU in Macbook in the current approach.

@@ -15,18 +15,32 @@ services:
       - DEBUG=True
     networks:
       - ollama-app-network
-    extra_hosts:
-      - host.docker.internal:host-gateway
     restart: on-failure
     command: uvicorn src.main:app --host 0.0.0.0 --port 8001 --reload
+    
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_MAX_LOADED_MODELS=3
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - ollama-app-network
 
   ollama-webui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: ollama-webui
     volumes:
       - ./ollama/ollama-webui:/app/backend/data
+    depends_on:
+      - ollama
     ports:
       - 8080:8080
+    env_file:
+      - .env
     environment: # https://docs.openwebui.com/getting-started/env-configuration#default_models
       - OLLAMA_BASE_URLS=${OLLAMA_BASE_URL}
       - OLLAMA_API_BASE_URL=${OLLAMA_BASE_URL}/api
@@ -35,10 +49,7 @@ services:
       - WEBUI_NAME=valiantlynx AI
       - WEBUI_URL=http://localhost:8080
       - WEBUI_SECRET_KEY=t0p-s3cr3t
-    env_file:
-      - .env
-    extra_hosts:
-      - host.docker.internal:host-gateway
+      - USE_OLLAMA_DOCKER=true
     networks:
       - ollama-app-network
 
@@ -74,8 +85,6 @@ services:
       - chromadb_data:/chroma/chroma
     networks:
       - ollama-app-network
-    extra_hosts:
-      - host.docker.internal:host-gateway
 
 volumes:
   ollama_data:
