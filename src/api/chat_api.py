@@ -41,8 +41,8 @@ async def ask_question(request: ChatRequest):
         logger.error(f"Error in ask_question: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     
-@router.post("/file_upload")
-async def file_upload(file: UploadFile = File(...)):
+@router.post("/upload_file")
+async def upload_file(file: UploadFile = File(...)):
     """
     Endpoint to upload a file to the /raw folder.
     """
@@ -72,55 +72,40 @@ async def file_upload(file: UploadFile = File(...)):
         logger.error(f"Error in file_upload: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     
-@router.get("/upload_file")
-async def upload_file():
-    """
-    Endpoint to ask a question.
-    This is a placeholder endpoint that can be extended later.
-    """
-    try:
-        ollama_rag = OllamaRAG(base_url=os.getenv("OLLAMA_BASE_URL", "http://ollama:11434"))
-        response = ollama_rag.add_documents(file_path="/app/raw/Resume.pdf")
-        return {"message": "PDF processed successfully", "chroma response": response}
-        # return {"message": "This is a placeholder for the ask question endpoint."}
-    except Exception as e:
-        logger.error(f"Error in ask_question: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     
-    
-@router.get("/test")
-async def user_ask():
-    """
-    Endpoint to handle user questions.
-    This is a placeholder endpoint that can be extended later.
-    """
-    try:
-        # Initialize RAG system
-        # rag = OllamaRAG(
-        #     embedding_model=os.getenv("MODEL_NAME", "mistral"),
-        #     chat_model=os.getenv("MODEL_NAME", "mistral"),
-        #     base_url=os.getenv("OLLAMA_BASE_URL", "http://ollama:11434"),
-        #     top_k=3
-        # )
+# @router.get("/test")
+# async def user_ask():
+#     """
+#     Endpoint to handle user questions.
+#     This is a placeholder endpoint that can be extended later.
+#     """
+#     try:
+#         # Initialize RAG system
+#         # rag = OllamaRAG(
+#         #     embedding_model=os.getenv("MODEL_NAME", "mistral"),
+#         #     chat_model=os.getenv("MODEL_NAME", "mistral"),
+#         #     base_url=os.getenv("OLLAMA_BASE_URL", "http://ollama:11434"),
+#         #     top_k=3
+#         # )
         
-        # question = "Who is vivek?"
-        # result = rag.generate_answer(question)
+#         # question = "Who is vivek?"
+#         # result = rag.generate_answer(question)
         
-        # return {
-        #     "message": "This is a placeholder for the user ask endpoint.",
-        #     "question": question,
-        #     "answer": result
-        #     }
-        c = ChromaDBManager(collection_name = "resume_collection")
-        result = c.query(query_text="Who is vivek?")
-        return {
-            "message": "This is a placeholder for the user ask endpoint.",
-            "query": "Who is sangam?",
-            "result": result
-        }
-    except Exception as e:
-        logger.error(f"Error in user_ask: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+#         # return {
+#         #     "message": "This is a placeholder for the user ask endpoint.",
+#         #     "question": question,
+#         #     "answer": result
+#         #     }
+#         c = ChromaDBManager(collection_name = "resume_collection")
+#         result = c.query(query_text="Who is vivek?")
+#         return {
+#             "message": "This is a placeholder for the user ask endpoint.",
+#             "query": "Who is sangam?",
+#             "result": result
+#         }
+#     except Exception as e:
+#         logger.error(f"Error in user_ask: {e}")
+#         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     
     
 @router.get("/collections/count")
