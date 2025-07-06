@@ -46,12 +46,20 @@ class TestOllamaRAG:
             assert rag.top_k == 10
     
     @patch('src.core.ollama_rag.PDFChunker')
-    def test_add_documents_success(self, mock_pdf_chunker):
+    @patch('src.core.ollama_rag.uuid.uuid4')
+    @patch('src.core.ollama_rag.datetime')
+    def test_add_documents_success(self, mock_datetime, mock_uuid, mock_pdf_chunker):
         """Test successful document addition"""
         # Setup mocks
         mock_chunker_instance = Mock()
         mock_chunker_instance.process_pdf.return_value = ["chunk1", "chunk2", "chunk3"]
         mock_pdf_chunker.return_value = mock_chunker_instance
+        
+        # Mock datetime for timestamp generation
+        mock_datetime.now.return_value.strftime.return_value = "20240706_120000"
+        
+        # Mock UUID generation
+        mock_uuid.side_effect = ['uuid1', 'uuid2', 'uuid3']
         
         self.rag_system.embedding_client.embed_documents.return_value = [
             [0.1, 0.2, 0.3],
@@ -66,7 +74,7 @@ class TestOllamaRAG:
         
         # Assertions
         mock_pdf_chunker.assert_called_once_with(chunk_size=500)
-        mock_chunker_instance.process_pdf.assert_called_once_with("/app/raw/Resume.pdf")
+        mock_chunker_instance.process_pdf.assert_called_once_with("test_file.pdf")
         self.rag_system.embedding_client.embed_documents.assert_called_once_with(["chunk1", "chunk2", "chunk3"])
         self.rag_system.chroma_client.add_documents.assert_called_once()
         
@@ -74,8 +82,9 @@ class TestOllamaRAG:
         call_args = self.rag_system.chroma_client.add_documents.call_args
         assert call_args[1]['documents'] == ["chunk1", "chunk2", "chunk3"]
         assert call_args[1]['embeddings'] == [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]]
-        assert call_args[1]['ids'] == ["doc_0", "doc_1", "doc_2"]
+        assert call_args[1]['ids'] == ["doc_0_uuid1", "doc_1_uuid2", "doc_2_uuid3"]
         assert len(call_args[1]['metadatas']) == 3
+        assert call_args[1]['metadatas'] == [{"source": "doc_0"}, {"source": "doc_1"}, {"source": "doc_2"}]
     
     @patch('src.core.ollama_rag.PDFChunker')
     def test_add_documents_with_custom_metadata(self, mock_pdf_chunker):
@@ -163,4 +172,3 @@ class TestOllamaRAG:
         assert result['answer'] == "Custom answer."
         assert result['confidence'] == 0.8
         assert 'sources' not in result
-    

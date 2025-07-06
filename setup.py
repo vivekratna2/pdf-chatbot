@@ -12,7 +12,8 @@ requirements = [
     "requests==2.32.4",
     "langgraph==0.5.1",
     "pytest==8.4.1",
-    "python-multipart==0.0.20"
+    "python-multipart==0.0.20",
+    "scikit-learn==1.7.0"
 ]
 
 setup(

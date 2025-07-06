@@ -21,7 +21,7 @@ class ChromaDBManager:
         # Create or get collection
         self.collection = self.client.get_or_create_collection(
             name=collection_name,
-            embedding_function=None  # We'll handle embeddings manually
+            metadata={"hnsw:space": "cosine"}  # Use cosine similarity
         )
     
     def add_documents(self,

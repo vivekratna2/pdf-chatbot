@@ -1,6 +1,7 @@
 from typing import List
-
+import numpy as np
 import requests
+from sklearn.preprocessing import normalize
 
 
 class OllamaEmbedding:
@@ -22,7 +23,12 @@ class OllamaEmbedding:
             )
             if response.status_code == 200:
                 embedding = response.json()["embedding"]
-                embeddings.append(embedding)
+                
+                # Normalize the embedding vector
+                embedding = np.array(embedding)
+                normalized_embedding = normalize([embedding], norm='l2')[0]
+                
+                embeddings.append(normalized_embedding.tolist())
             else:
                 raise Exception(f"Failed to get embedding: {response.text}")
         return embeddings
@@ -37,7 +43,12 @@ class OllamaEmbedding:
             }
         )
         if response.status_code == 200:
-            return response.json()["embedding"]
+            embedding = response.json()["embedding"]
+            
+            # Normalize the embedding vector
+            embedding = np.array(embedding)
+            normalized_embedding = normalize([embedding], norm='l2')[0]
+            
+            return normalized_embedding.tolist()
         else:
             raise Exception(f"Failed to get embedding: {response.text}")
-        
