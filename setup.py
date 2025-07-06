@@ -11,7 +11,8 @@ requirements = [
     "textsplitter==1.0.3",
     "requests==2.32.4",
     "langgraph==0.5.1",
-    "pytest==8.4.1"
+    "pytest==8.4.1",
+    "python-multipart==0.0.20"
 ]
 
 setup(

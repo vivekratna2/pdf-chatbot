@@ -33,3 +33,4 @@ archive.zip
 build/
 .env
 ollama/
+raw/*.pdf
