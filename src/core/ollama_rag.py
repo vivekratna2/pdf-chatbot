@@ -67,23 +67,9 @@ class OllamaRAG:
         """Retrieve most relevant documents for a query"""
         k = top_k if top_k is not None else self.top_k
         
-        # Generate query embedding using Ollama
-        # query_embedding = self.embedding_client.embed_query(query)
-        
-        # Search in ChromaDB
-        # results = self.chroma_client.query(
-        #     query_embeddings=[query_embedding],
-        #     n_results=k
-        # )
-        
         results = self.chroma_client.query(
             query_text=query,
         )
-        
-        # results = self.collection.query(
-        #     query_embeddings=[query_embedding],
-        #     n_results=k
-        # )
         
         # Format results
         relevant_docs = []
@@ -142,35 +128,6 @@ class OllamaRAG:
             ]
         
         return result
-    
-    def generate_streaming_answer(
-        self,
-        user_question: str,
-        system_prompt: Optional[str] = None,
-        temperature: float = 0.7,
-        max_tokens: int = 1000
-    ):
-        """Generate streaming answer using RAG approach"""
-        
-        # Retrieve relevant documents from ChromaDB
-        relevant_docs = self.retrieve_relevant_documents(user_question)
-        
-        if not relevant_docs:
-            yield "I don't have relevant information to answer your question."
-            return
-        
-        # Extract context texts
-        context_texts = [doc[0] for doc in relevant_docs]
-        
-        # Generate streaming answer using Ollama
-        for chunk in self.chat_client.generate_streaming_answer(
-            user_question=user_question,
-            context=context_texts,
-            system_prompt=system_prompt,
-            temperature=temperature,
-            max_tokens=max_tokens
-        ):
-            yield chunk
     
     # def clear_documents(self) -> None:
     #     """Clear all documents from the knowledge base"""

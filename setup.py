@@ -10,7 +10,8 @@ requirements = [
     "pypdf==5.7.0",
     "textsplitter==1.0.3",
     "requests==2.32.4",
-    "langgraph==0.5.1"
+    "langgraph==0.5.1",
+    "pytest==8.4.1"
 ]
 
 setup(

@@ -40,3 +40,4 @@ class OllamaEmbedding:
             return response.json()["embedding"]
         else:
             raise Exception(f"Failed to get embedding: {response.text}")
+        
