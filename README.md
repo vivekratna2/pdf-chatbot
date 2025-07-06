@@ -17,8 +17,8 @@ This AI Agent System provides a comprehensive platform for managing AI agents wi
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd ai-assessment
+   git clone git@github.com:vivekratna2/pdf-chatbot.git
+   cd pdf-chatbot
    ```
 
 2. **Set up environment variables**
