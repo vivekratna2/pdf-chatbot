@@ -1,6 +1,8 @@
 import logging
 import os
-from fastapi import APIRouter, HTTPException, status, Body, Depends
+from pathlib import Path
+import shutil
+from fastapi import APIRouter, File, HTTPException, UploadFile, status, Body, Depends
 from pydantic import BaseModel
 
 from src.agent.langgraph_agent import RAGAgent
@@ -39,7 +41,37 @@ async def ask_question(request: ChatRequest):
         logger.error(f"Error in ask_question: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     
-
+@router.post("/file_upload")
+async def file_upload(file: UploadFile = File(...)):
+    """
+    Endpoint to upload a file to the /raw folder.
+    """
+    try:
+        # Define the raw folder path
+        raw_folder = Path("/app/raw")
+        
+        # Create the raw folder if it doesn't exist
+        raw_folder.mkdir(parents=True, exist_ok=True)
+        
+        # Define the file path
+        file_path = raw_folder / file.filename
+        
+        # Save the uploaded file
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        ollama_rag = OllamaRAG(base_url=os.getenv("OLLAMA_BASE_URL", "http://ollama:11434"))
+        response = ollama_rag.add_documents(file_path=file_path)
+        return {
+            "message": "PDF processed successfully",
+            "filename": file.filename,
+            "file_path": str(file_path),
+            "chroma response": response
+        }
+    except Exception as e:
+        logger.error(f"Error in file_upload: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    
 @router.get("/upload_file")
 async def upload_file():
     """
@@ -56,7 +88,7 @@ async def upload_file():
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     
     
-@router.get("/user_ask")
+@router.get("/test")
 async def user_ask():
     """
     Endpoint to handle user questions.
@@ -64,21 +96,28 @@ async def user_ask():
     """
     try:
         # Initialize RAG system
-        rag = OllamaRAG(
-            embedding_model=os.getenv("MODEL_NAME", "mistral"),
-            chat_model=os.getenv("MODEL_NAME", "mistral"),
-            base_url=os.getenv("OLLAMA_BASE_URL", "http://ollama:11434"),
-            top_k=3
-        )
+        # rag = OllamaRAG(
+        #     embedding_model=os.getenv("MODEL_NAME", "mistral"),
+        #     chat_model=os.getenv("MODEL_NAME", "mistral"),
+        #     base_url=os.getenv("OLLAMA_BASE_URL", "http://ollama:11434"),
+        #     top_k=3
+        # )
         
-        question = "Who is vivek?"
-        result = rag.generate_answer(question)
+        # question = "Who is vivek?"
+        # result = rag.generate_answer(question)
         
+        # return {
+        #     "message": "This is a placeholder for the user ask endpoint.",
+        #     "question": question,
+        #     "answer": result
+        #     }
+        c = ChromaDBManager(collection_name = "resume_collection")
+        result = c.query(query_text="Who is vivek?")
         return {
             "message": "This is a placeholder for the user ask endpoint.",
-            "question": question,
-            "answer": result
-            }
+            "query": "Who is sangam?",
+            "result": result
+        }
     except Exception as e:
         logger.error(f"Error in user_ask: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

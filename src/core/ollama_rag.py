@@ -2,6 +2,8 @@ import os
 from typing import List, Dict, Any, Optional, Tuple
 import chromadb
 from chromadb.config import Settings
+import uuid
+from datetime import datetime
 
 from src.core.chromadb_manager import ChromaDBManager
 from src.core.ollama_embedding import OllamaEmbedding
@@ -36,22 +38,18 @@ class OllamaRAG:
     def add_documents(self, file_path: str, metadata: Optional[List[Dict]] = None) -> None:
         """Add documents to the knowledge base"""
         pdfchunker = PDFChunker(chunk_size=500)
-        chunks = pdfchunker.process_pdf("/app/raw/Resume.pdf")
+        chunks = pdfchunker.process_pdf(file_path)
         
         # Generate embeddings using Ollama
         embeddings = self.embedding_client.embed_documents(chunks)
         
-        # Prepare data for ChromaDB
-        ids = [f"doc_{i}" for i in range(len(chunks))]
-        metadatas = metadata if metadata else [{"source": f"doc_{i}"} for i in range(len(chunks))]
+        # Generate unique IDs using UUID or timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        ids = [f"doc_{i}_{str(uuid.uuid4())}" for i in range(len(chunks))]
         
+        metadatas = metadata if metadata else [{"source": f"doc_{i}"} for i in range(len(chunks))]
+    
         # Store in ChromaDB
-        # self.collection.add(
-        #     documents=chunks,
-        #     embeddings=embeddings,
-        #     ids=ids,
-        #     metadatas=metadatas
-        # )
         self.chroma_client.add_documents(
             documents=chunks,
             embeddings=embeddings,

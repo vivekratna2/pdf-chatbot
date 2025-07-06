@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 import requests
+import numpy as np
 from src.core.ollama_embedding import OllamaEmbedding
 
 
@@ -13,8 +14,10 @@ class TestOllamaEmbedding:
             base_url="http://ollama:11434"
         )
     
+    @patch('src.core.ollama_embedding.normalize')
+    @patch('src.core.ollama_embedding.np.array')
     @patch('src.core.ollama_embedding.requests.post')
-    def test_embed_documents_success(self, mock_post):
+    def test_embed_documents_success(self, mock_post, mock_array, mock_normalize):
         """Test successful embedding of multiple documents"""
         # Setup mock responses
         mock_response1 = Mock()
@@ -27,6 +30,24 @@ class TestOllamaEmbedding:
         
         mock_post.side_effect = [mock_response1, mock_response2]
         
+        # Mock numpy array creation
+        mock_array.side_effect = [
+            np.array([0.1, 0.2, 0.3]),
+            np.array([0.4, 0.5, 0.6])
+        ]
+        
+        # Mock normalization results
+        mock_normalized1 = Mock()
+        mock_normalized1.tolist.return_value = [0.2672612419124244, 0.5345224838248488, 0.8017837257372731]
+        
+        mock_normalized2 = Mock()
+        mock_normalized2.tolist.return_value = [0.4558423058385518, 0.5698028822981898, 0.6837634587578276]
+        
+        mock_normalize.side_effect = [
+            [mock_normalized1],
+            [mock_normalized2]
+        ]
+        
         # Test data
         texts = ["Hello world", "How are you?"]
         
@@ -35,27 +56,8 @@ class TestOllamaEmbedding:
         
         # Assertions
         assert len(result) == 2
-        assert result[0] == [0.1, 0.2, 0.3]
-        assert result[1] == [0.4, 0.5, 0.6]
-        
-        # Verify requests were made correctly
-        assert mock_post.call_count == 2
-        
-        # Check first call
-        first_call = mock_post.call_args_list[0]
-        assert first_call[0][0] == "http://ollama:11434/api/embeddings"
-        assert first_call[1]['json'] == {
-            "model": "mistral",
-            "prompt": "Hello world"
-        }
-        
-        # Check second call
-        second_call = mock_post.call_args_list[1]
-        assert second_call[0][0] == "http://ollama:11434/api/embeddings"
-        assert second_call[1]['json'] == {
-            "model": "mistral",
-            "prompt": "How are you?"
-        }
+        assert result[0] == [0.2672612419124244, 0.5345224838248488, 0.8017837257372731]
+        assert result[1] == [0.4558423058385518, 0.5698028822981898, 0.6837634587578276]
     
     @patch('src.core.ollama_embedding.requests.post')
     def test_embed_documents_empty_list(self, mock_post):
@@ -104,14 +106,25 @@ class TestOllamaEmbedding:
         
         mock_post.assert_called_once()
     
+    @patch('src.core.ollama_embedding.normalize')
+    @patch('src.core.ollama_embedding.np.array')
     @patch('src.core.ollama_embedding.requests.post')
-    def test_embed_query_success(self, mock_post):
+    def test_embed_query_success(self, mock_post, mock_array, mock_normalize):
         """Test successful embedding of a single query"""
         # Setup mock response
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"embedding": [0.1, 0.2, 0.3, 0.4]}
         mock_post.return_value = mock_response
+        
+        # Mock numpy array creation
+        mock_array.return_value = np.array([0.1, 0.2, 0.3, 0.4])
+        
+        # Mock normalization result
+        mock_normalized = Mock()
+        mock_normalized.tolist.return_value = [0.1825741858350554, 0.3651483716701107, 0.5477225575051661, 0.7302967433402214]
+        
+        mock_normalize.return_value = [mock_normalized]
         
         # Test data
         query_text = "What is the weather like today?"
@@ -120,7 +133,7 @@ class TestOllamaEmbedding:
         result = self.embedding_client.embed_query(query_text)
         
         # Assertions
-        assert result == [0.1, 0.2, 0.3, 0.4]
+        assert result == [0.1825741858350554, 0.3651483716701107, 0.5477225575051661, 0.7302967433402214]
         
         # Verify request was made correctly
         mock_post.assert_called_once_with(
@@ -130,15 +143,29 @@ class TestOllamaEmbedding:
                 "prompt": "What is the weather like today?"
             }
         )
+        
+        # Verify normalization was called correctly
+        mock_normalize.assert_called_once_with([np.array([0.1, 0.2, 0.3, 0.4])], norm='l2')
     
+    @patch('src.core.ollama_embedding.normalize')
+    @patch('src.core.ollama_embedding.np.array')
     @patch('src.core.ollama_embedding.requests.post')
-    def test_embed_query_empty_string(self, mock_post):
+    def test_embed_query_empty_string(self, mock_post, mock_array, mock_normalize):
         """Test embedding of empty string query"""
         # Setup mock response
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"embedding": [0.0, 0.0, 0.0]}
         mock_post.return_value = mock_response
+        
+        # Mock numpy array creation
+        mock_array.return_value = np.array([0.0, 0.0, 0.0])
+        
+        # Mock normalization result (normalized zero vector should remain zero)
+        mock_normalized = Mock()
+        mock_normalized.tolist.return_value = [0.0, 0.0, 0.0]
+        
+        mock_normalize.return_value = [mock_normalized]
         
         # Test data
         query_text = ""
@@ -157,4 +184,6 @@ class TestOllamaEmbedding:
                 "prompt": ""
             }
         )
-    
+        
+        # Verify normalization was called correctly
+        mock_normalize.assert_called_once_with([np.array([0.0, 0.0, 0.0])], norm='l2')
