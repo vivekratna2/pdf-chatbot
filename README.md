@@ -37,6 +37,11 @@ This AI Agent System provides a comprehensive platform for managing AI agents wi
    docker-compose up -d
    ```
 
+   for Ollama with Docker
+   ```bash
+   docker-compose -f docker-compose-ollama.yml up -d
+   ```
+
 5. **Mistral installation**
 
    This is for the case when Ollama is hosted via docker.
@@ -75,3 +80,7 @@ flowchart LR
 
 ### Note
 * Running Ollama service in the host machine results in faster chat response than with docker. Ollama deployed with docker uses only CPU in Macbook in the current approach.
+
+
+### Demo Video
+   Demo video is in the doc folder
